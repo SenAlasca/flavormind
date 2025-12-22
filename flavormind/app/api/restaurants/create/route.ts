@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sql } from '@vercel/postgres';
 
 /**
  * POST /api/restaurants/create
  * Create a new restaurant
- * 
- * Note: Edge Config is read-only from the SDK.
- * For now, this returns the data structure that should be stored.
- * In production, you would use Vercel's Edge Config API to write data.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -21,30 +18,31 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Create restaurant object
-    const restaurant = {
-      name,
-      code,
-      pins: {
-        owner: ownerPin,
-        manager: managerPin || null,
-        staff: staffPin || null,
-      },
-      createdAt: new Date().toISOString(),
-      menu: [],
-      orders: [],
-    };
+    // Check if restaurant code already exists
+    const existing = await sql`
+      SELECT id FROM restaurants WHERE code = ${code}
+    `;
     
-    // TODO: In production, use Vercel Edge Config Management API to write data
-    // For now, we'll return the structure and log instructions
-    console.log('Restaurant created (store this in Edge Config):', restaurant);
-    console.log('To store in Edge Config, use the Vercel dashboard or CLI:');
-    console.log(`vercel env add restaurants --value '{"${code}": ${JSON.stringify(restaurant)}}'`);
+    if (existing.rows.length > 0) {
+      return NextResponse.json(
+        { error: 'Restaurant code already exists' },
+        { status: 409 }
+      );
+    }
+    
+    // Insert new restaurant into database
+    const result = await sql`
+      INSERT INTO restaurants (name, code, owner_pin, manager_pin, staff_pin)
+      VALUES (${name}, ${code}, ${ownerPin}, ${managerPin || null}, ${staffPin || null})
+      RETURNING id, name, code, created_at
+    `;
+    
+    const restaurant = result.rows[0];
     
     return NextResponse.json({ 
       success: true,
       restaurant,
-      message: 'Restaurant structure created. Store in Edge Config via Vercel dashboard.'
+      message: 'Restaurant created successfully'
     });
   } catch (error) {
     console.error('Error creating restaurant:', error);

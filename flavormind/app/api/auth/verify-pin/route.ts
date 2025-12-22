@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEdgeConfigValue } from '@/lib/edgeConfig';
+import { sql } from '@vercel/postgres';
 
 /**
  * POST /api/auth/verify-pin
@@ -18,26 +18,29 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Get all restaurants from Edge Config
-    const restaurants = await getEdgeConfigValue('restaurants') as Record<string, any> || {};
+    // Query restaurant from database
+    const result = await sql`
+      SELECT id, name, code, owner_pin, manager_pin, staff_pin
+      FROM restaurants
+      WHERE code = ${code}
+    `;
     
-    // Find restaurant by code
-    const restaurant = restaurants[code];
-    
-    if (!restaurant) {
+    if (result.rows.length === 0) {
       return NextResponse.json(
         { error: 'Invalid restaurant code' },
         { status: 404 }
       );
     }
     
+    const restaurant = result.rows[0];
+    
     // Check which PIN was provided
     let role = null;
-    if (restaurant.pins.owner === pin) {
+    if (restaurant.owner_pin === pin) {
       role = 'owner';
-    } else if (restaurant.pins.manager === pin) {
+    } else if (restaurant.manager_pin === pin) {
       role = 'manager';
-    } else if (restaurant.pins.staff === pin) {
+    } else if (restaurant.staff_pin === pin) {
       role = 'staff';
     }
     
@@ -52,6 +55,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true,
       role,
+      restaurantId: restaurant.id,
       restaurant: {
         name: restaurant.name,
         code: restaurant.code,

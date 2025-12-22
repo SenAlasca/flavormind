@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEdgeConfigValue } from '@/lib/edgeConfig';
+import { sql } from '@vercel/postgres';
 
 /**
  * GET /api/restaurants/[code]
@@ -12,19 +12,21 @@ export async function GET(
   try {
     const code = params.code;
     
-    // Get all restaurants from Edge Config
-    const restaurants = await getEdgeConfigValue('restaurants') as Record<string, any> || {};
+    // Query restaurant from database
+    const result = await sql`
+      SELECT id, code, name, created_at, updated_at
+      FROM restaurants
+      WHERE code = ${code}
+    `;
     
-    // Find restaurant by code
-    const restaurant = restaurants[code];
-    
-    if (!restaurant) {
+    if (result.rows.length === 0) {
       return NextResponse.json(
         { error: 'Restaurant not found' },
         { status: 404 }
       );
     }
     
+    const restaurant = result.rows[0];
     return NextResponse.json({ restaurant });
   } catch (error) {
     console.error('Error fetching restaurant:', error);
