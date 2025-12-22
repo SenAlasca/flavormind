@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { MdRestaurant, MdTableRestaurant, MdPerson, MdGroup } from "react-icons/md";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { BsBoxSeam } from "react-icons/bs";
 import { IoWarningOutline } from "react-icons/io5";
 
 export default function CustomerLogin() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [restaurantCode, setRestaurantCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -87,12 +89,28 @@ export default function CustomerLogin() {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      // TODO: Navigate to menu
+      
+      // Log customer info to console
       if (orderType === "takeout") {
-        alert(`Going to menu\nName: ${customerName}\nType: Takeout\nAllergies: ${allergies || "None"}`);
+        console.log("Customer Order Details:", {
+          name: customerName,
+          type: "Takeout",
+          allergies: allergies || "None",
+          restaurantCode: restaurantCode
+        });
       } else {
-        alert(`Going to menu\nName: ${customerName}\nType: Dine-in\nTable: ${tableNumber}\nGuests: ${numberOfGuests}\nAllergies: ${allergies || "None"}`);
+        console.log("Customer Order Details:", {
+          name: customerName,
+          type: "Dine-in",
+          table: tableNumber,
+          guests: numberOfGuests,
+          allergies: allergies || "None",
+          restaurantCode: restaurantCode
+        });
       }
+      
+      // Navigate to menu page
+      router.push("/customer/menu");
     }, 1000);
   };
 
