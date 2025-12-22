@@ -11,16 +11,33 @@ export default function KitchenLogin() {
   const [restaurantCode, setRestaurantCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [staffPin, setStaffPin] = useState("");
+  const [error, setError] = useState("");
+  const [restaurantData, setRestaurantData] = useState<any>(null);
 
-  const handleCodeSubmit = (e: React.FormEvent) => {
+  const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (restaurantCode.trim()) {
       setIsLoading(true);
-      // Simulate API call to verify restaurant code
-      setTimeout(() => {
+      setError("");
+      
+      try {
+        // Verify restaurant code exists
+        const response = await fetch(`/api/restaurants/${restaurantCode}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Restaurant not found');
+        }
+
+        console.log('Restaurant found:', data);
+        setRestaurantData(data.restaurant);
         setIsLoading(false);
         setStep(2);
-      }, 1500);
+      } catch (err: any) {
+        console.error('Error verifying code:', err);
+        setError(err.message || 'Invalid restaurant code');
+        setIsLoading(false);
+      }
     }
   };
 
@@ -29,16 +46,52 @@ export default function KitchenLogin() {
     router.push("/kitchen/create");
   };
 
-  const handlePinSubmit = (e: React.FormEvent) => {
+  const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (staffPin.trim()) {
       setIsLoading(true);
-      // Simulate API call to verify PIN
-      setTimeout(() => {
+      setError("");
+      
+      try {
+        // Verify PIN
+        const response = await fetch('/api/auth/verify-pin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            code: restaurantCode,
+            pin: staffPin,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Invalid PIN');
+        }
+
+        console.log('Authentication successful:', data);
+        
+        // Store restaurant info in sessionStorage
+        sessionStorage.setItem('restaurantId', data.restaurantId);
+        sessionStorage.setItem('restaurantCode', data.restaurant.code);
+        sessionStorage.setItem('restaurantName', data.restaurant.name);
+        sessionStorage.setItem('userRole', data.role);
+        
         setIsLoading(false);
-        // TODO: Navigate to kitchen dashboard
-        alert("Access granted! Going to kitchen dashboard...");
-      }, 1500);
+        
+        // Navigate based on role
+        if (data.role === 'owner' || data.role === 'manager') {
+          router.push('/kitchen/admin');
+        } else {
+          router.push('/kitchen/dashboard');
+        }
+      } catch (err: any) {
+        console.error('Error verifying PIN:', err);
+        setError(err.message || 'Invalid PIN');
+        setIsLoading(false);
+      }
     }
   };
 
@@ -83,6 +136,12 @@ export default function KitchenLogin() {
                   maxLength={10}
                 />
               </div>
+
+              {error && (
+                <div className="bg-[#C84B3A] border-2 border-[#5A3A2E] rounded-lg p-3 text-white text-sm font-bold">
+                  ⚠️ {error}
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -165,6 +224,12 @@ export default function KitchenLogin() {
                   maxLength={4}
                 />
               </div>
+
+              {error && (
+                <div className="bg-[#C84B3A] border-2 border-[#5A3A2E] rounded-lg p-3 text-white text-sm font-bold">
+                  ⚠️ {error}
+                </div>
+              )}
 
               <button
                 type="submit"

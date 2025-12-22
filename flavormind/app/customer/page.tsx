@@ -17,16 +17,39 @@ export default function CustomerLogin() {
   const [tableNumber, setTableNumber] = useState("");
   const [numberOfGuests, setNumberOfGuests] = useState("");
   const [allergies, setAllergies] = useState("");
+  const [error, setError] = useState("");
+  const [restaurantData, setRestaurantData] = useState<any>(null);
 
-  const handleCodeSubmit = (e: React.FormEvent) => {
+  const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (restaurantCode.trim()) {
       setIsLoading(true);
-      // Simulate API call to verify restaurant code
-      setTimeout(() => {
+      setError("");
+      
+      try {
+        // Verify restaurant code exists
+        const response = await fetch(`/api/restaurants/${restaurantCode}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Restaurant not found');
+        }
+
+        console.log('Restaurant found:', data);
+        setRestaurantData(data.restaurant);
+        
+        // Store restaurant info in sessionStorage
+        sessionStorage.setItem('customerRestaurantId', data.restaurant.id);
+        sessionStorage.setItem('customerRestaurantCode', data.restaurant.code);
+        sessionStorage.setItem('customerRestaurantName', data.restaurant.name);
+        
         setIsLoading(false);
         setStep(2);
-      }, 1500);
+      } catch (err: any) {
+        console.error('Error verifying code:', err);
+        setError(err.message || 'Invalid restaurant code');
+        setIsLoading(false);
+      }
     }
   };
 
@@ -87,6 +110,21 @@ export default function CustomerLogin() {
 
   const navigateToMenu = () => {
     setIsLoading(true);
+    
+    // Store customer session info
+    const sessionData = {
+      name: customerName,
+      orderType: orderType,
+      tableNumber: orderType === "dine-in" ? tableNumber : null,
+      guests: orderType === "dine-in" ? numberOfGuests : null,
+      allergies: allergies || null,
+      restaurantCode: restaurantCode,
+      restaurantId: restaurantData?.id,
+      restaurantName: restaurantData?.name
+    };
+    
+    sessionStorage.setItem('customerSession', JSON.stringify(sessionData));
+    
     setTimeout(() => {
       setIsLoading(false);
       
@@ -155,6 +193,12 @@ export default function CustomerLogin() {
                   maxLength={10}
                 />
               </div>
+
+              {error && (
+                <div className="bg-[#C84B3A] border-2 border-[#5A3A2E] rounded-lg p-3 text-white text-sm font-bold">
+                  ⚠️ {error}
+                </div>
+              )}
 
               <button
                 type="submit"

@@ -16,11 +16,13 @@ export default function CreateRestaurant() {
   const [staffPin, setStaffPin] = useState("");
   const [staffPinConfirm, setStaffPinConfirm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (restaurantName.trim()) {
       setIsLoading(true);
+      setError("");
       // Simulate API call
       setTimeout(() => {
         setIsLoading(false);
@@ -50,16 +52,43 @@ export default function CreateRestaurant() {
     setStep(3);
   };
 
-  const handlePinsSubmit = (e: React.FormEvent) => {
+  const handlePinsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (ownerPin === ownerPinConfirm && staffPin === staffPinConfirm && 
         ownerPin.length === 4 && staffPin.length === 4) {
       setIsLoading(true);
-      // Simulate API call to create restaurant
-      setTimeout(() => {
+      setError("");
+      
+      try {
+        // Call API to create restaurant
+        const response = await fetch('/api/restaurants/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: restaurantName,
+            code: restaurantCode,
+            ownerPin: ownerPin,
+            managerPin: ownerPin, // Use owner PIN as manager PIN as well
+            staffPin: staffPin,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to create restaurant');
+        }
+
+        console.log('Restaurant created successfully:', data);
         setIsLoading(false);
         setStep(4);
-      }, 1500);
+      } catch (err: any) {
+        console.error('Error creating restaurant:', err);
+        setError(err.message || 'Failed to create restaurant');
+        setIsLoading(false);
+      }
     }
   };
 
@@ -280,6 +309,12 @@ export default function CreateRestaurant() {
                   <p className="text-xs text-[#C84B3A] font-bold mt-1">PINs don't match!</p>
                 )}
               </div>
+
+              {error && (
+                <div className="bg-[#C84B3A] border-2 border-[#5A3A2E] rounded-lg p-3 text-white text-sm font-bold">
+                  ⚠️ {error}
+                </div>
+              )}
 
               <button
                 type="submit"
