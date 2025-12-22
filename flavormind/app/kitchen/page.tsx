@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { MdRestaurant, MdLock } from "react-icons/md";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 export default function KitchenLogin() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [restaurantCode, setRestaurantCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -23,8 +25,8 @@ export default function KitchenLogin() {
   };
 
   const handleCreateRestaurant = () => {
-    // TODO: Navigate to restaurant creation flow
-    alert("Create Restaurant flow - Coming soon!");
+    // Navigate to restaurant creation flow
+    router.push("/kitchen/create");
   };
 
   const handlePinSubmit = (e: React.FormEvent) => {
