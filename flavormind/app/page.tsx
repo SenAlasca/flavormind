@@ -78,7 +78,7 @@ export default function Home() {
         {/* Footer credit */}
         <div className="text-center animate-fade-in-up pb-2">
           <p className="text-xs sm:text-sm text-[#5A3A2E] opacity-75">
-            This project has been created for the <span className="font-bold text-[#C84B3A]">FlavorTown Hackable</span> event
+            This project has been created for the <span className="font-bold text-[#C84B3A]">FlavorTown HackClub</span> event
           </p>
         </div>
       </main>
