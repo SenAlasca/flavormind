@@ -1,71 +1,107 @@
 # FlavorMind Database Setup Guide
 
-## Edge Config Structure
+## Step 1: Deploy to Vercel
 
-Your Edge Config should contain a `restaurants` key with the following structure:
-
-```json
-{
-  "restaurants": {
-    "ABC123": {
-      "name": "Test Restaurant",
-      "code": "ABC123",
-      "pins": {
-        "owner": "1234",
-        "manager": "5678",
-        "staff": "9999"
-      },
-      "createdAt": "2025-12-22T00:00:00.000Z",
-      "menu": [],
-      "orders": []
-    }
-  }
-}
-```
-
-## Setting up Edge Config Data
-
-### Method 1: Using Vercel Dashboard
+### Option A: Using Vercel Dashboard
 1. Go to https://vercel.com/dashboard
-2. Navigate to Storage → Edge Config → flavormind-db
-3. Click "Edit Items"
-4. Add a new item with key: `restaurants` and value as JSON object above
+2. Click "Add New" → "Project"
+3. Import your Git repository (GitHub, GitLab, or Bitbucket)
+4. Vercel will auto-detect Next.js settings
+5. Click "Deploy"
 
-### Method 2: Using Vercel CLI
+### Option B: Using Vercel CLI
 ```bash
-# Install Vercel CLI if you haven't
+# Install Vercel CLI globally (if not already installed)
 npm i -g vercel
 
 # Login to Vercel
 vercel login
 
-# Set the Edge Config value
-vercel edge-config:set restaurants '{"ABC123":{"name":"Test Restaurant","code":"ABC123","pins":{"owner":"1234","manager":"5678","staff":"9999"},"createdAt":"2025-12-22T00:00:00.000Z","menu":[],"orders":[]}}' --edge-config-id ecfg_akdqbljsdt2tvzcttlryxb7bg4xk
+# Deploy from project directory
+cd D:\FlavorTown\flavormind\flavormind
+vercel
 ```
 
-## API Routes Created
+## Step 2: Set Environment Variables in Vercel
 
-✅ `GET /api/restaurants/[code]` - Get restaurant by code
-✅ `POST /api/restaurants/create` - Create new restaurant (returns structure to manually add)
-✅ `POST /api/auth/verify-pin` - Verify restaurant code + PIN combination
+After deployment, add these environment variables:
 
-## Testing the Setup
+1. Go to your project in Vercel Dashboard
+2. Navigate to Settings → Environment Variables
+3. Add the following variables:
 
-After adding data to Edge Config, test with:
+```
+POSTGRES_URL=postgresql://neondb_owner:npg_cDhQ0UN4qBjZ@ep-weathered-brook-adaqvqzq-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
 
+POSTGRES_PRISMA_URL=postgresql://neondb_owner:npg_cDhQ0UN4qBjZ@ep-weathered-brook-adaqvqzq-pooler.c-2.us-east-1.aws.neon.tech/neondb?connect_timeout=15&sslmode=require
+
+POSTGRES_URL_NON_POOLING=postgresql://neondb_owner:npg_cDhQ0UN4qBjZ@ep-weathered-brook-adaqvqzq.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+```
+
+**Important**: Select "Production", "Preview", and "Development" for each variable.
+
+## Step 3: Redeploy After Adding Environment Variables
+
+Click "Redeploy" in Vercel to apply the environment variables.
+
+## Step 4: Initialize Database Tables
+
+After deployment is complete, visit this URL to create the database tables:
+
+```
+https://your-app-name.vercel.app/api/db/init
+```
+
+You should see a success response:
+```json
+{
+  "success": true,
+  "message": "Database tables created successfully",
+  "tables": ["restaurants", "menu_items", "orders", "order_items"]
+}
+```
+
+## Step 5: Test the Setup
+
+### Test 1: Create a test restaurant
 ```bash
-# Test getting a restaurant
-curl http://localhost:3000/api/restaurants/ABC123
-
-# Test PIN verification
-curl -X POST http://localhost:3000/api/auth/verify-pin \
+curl -X POST https://your-app-name.vercel.app/api/restaurants/create \
   -H "Content-Type: application/json" \
-  -d '{"code":"ABC123","pin":"1234"}'
+  -d '{
+    "name": "Test Restaurant",
+    "code": "TEST01",
+    "ownerPin": "1234",
+    "managerPin": "5678",
+    "staffPin": "9999"
+  }'
 ```
+
+### Test 2: Get restaurant by code
+```bash
+curl https://your-app-name.vercel.app/api/restaurants/TEST01
+```
+
+### Test 3: Verify PIN
+```bash
+curl -X POST https://your-app-name.vercel.app/api/auth/verify-pin \
+  -H "Content-Type: application/json" \
+  -d '{"code":"TEST01","pin":"1234"}'
+```
+
+## Database Schema
+
+The following tables are created:
+
+- **restaurants**: Store restaurant details, codes, and PINs
+- **menu_items**: Store menu items for each restaurant
+- **orders**: Store customer orders
+- **order_items**: Store individual items within each order
 
 ## Next Steps
 
-1. Add initial restaurant data to Edge Config (use Method 1 or 2 above)
-2. Update UI components to call these API routes
-3. Add menu and order management routes
-4. Implement proper authentication/session management
+After successful setup:
+1. ✅ Database is initialized
+2. ✅ API routes are working
+3. 🔄 Connect UI components to API routes
+4. 🔄 Add menu management endpoints
+5. 🔄 Add order management endpoints

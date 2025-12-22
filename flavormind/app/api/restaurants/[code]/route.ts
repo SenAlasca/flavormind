@@ -7,10 +7,10 @@ import { sql } from '@vercel/postgres';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    const code = params.code;
+    const { code } = await params;
     
     // Query restaurant from database
     const result = await sql`
