@@ -21,21 +21,46 @@ export default function KitchenLogin() {
       setError("");
       
       try {
-        // Verify restaurant code exists
-        const response = await fetch(`/api/restaurants/${restaurantCode}`);
+        console.log('[KITCHEN] Starting restaurant verification for code:', restaurantCode);
+        const apiUrl = `/api/restaurants/${restaurantCode}`;
+        console.log('[KITCHEN] API URL:', apiUrl);
+        
+        // Add timeout to fetch
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          console.log('[KITCHEN] Request timeout - aborting');
+          controller.abort();
+        }, 10000); // 10 second timeout
+        
+        console.log('[KITCHEN] Sending fetch request...');
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        clearTimeout(timeoutId);
+        
+        console.log('[KITCHEN] Response received, status:', response.status);
         const data = await response.json();
+        console.log('[KITCHEN] Response data:', data);
 
         if (!response.ok) {
           throw new Error(data.error || 'Restaurant not found');
         }
 
-        console.log('Restaurant found:', data);
+        console.log('[KITCHEN] Restaurant found:', data);
         setRestaurantData(data.restaurant);
         setIsLoading(false);
         setStep(2);
       } catch (err: any) {
-        console.error('Error verifying code:', err);
-        setError(err.message || 'Invalid restaurant code');
+        console.error('[KITCHEN] Error verifying code:', err);
+        if (err.name === 'AbortError') {
+          setError('Request timeout - please check your connection and try again');
+        } else {
+          setError(err.message || 'Invalid restaurant code');
+        }
         setIsLoading(false);
       }
     }
@@ -53,9 +78,19 @@ export default function KitchenLogin() {
       setError("");
       
       try {
-        // Verify PIN
+        console.log('[KITCHEN] Starting PIN verification');
+        
+        // Add timeout to fetch
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          console.log('[KITCHEN] PIN verification timeout - aborting');
+          controller.abort();
+        }, 10000); // 10 second timeout
+        
+        console.log('[KITCHEN] Sending PIN verification request...');
         const response = await fetch('/api/auth/verify-pin', {
           method: 'POST',
+          signal: controller.signal,
           headers: {
             'Content-Type': 'application/json',
           },
@@ -64,14 +99,17 @@ export default function KitchenLogin() {
             pin: staffPin,
           }),
         });
+        clearTimeout(timeoutId);
 
+        console.log('[KITCHEN] PIN verification response status:', response.status);
         const data = await response.json();
+        console.log('[KITCHEN] PIN verification response data:', data);
 
         if (!response.ok) {
           throw new Error(data.error || 'Invalid PIN');
         }
 
-        console.log('Authentication successful:', data);
+        console.log('[KITCHEN] Authentication successful:', data);
         
         // Store restaurant info in sessionStorage
         sessionStorage.setItem('restaurantId', data.restaurantId);

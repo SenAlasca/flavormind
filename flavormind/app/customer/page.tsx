@@ -27,15 +27,36 @@ export default function CustomerLogin() {
       setError("");
       
       try {
-        // Verify restaurant code exists
-        const response = await fetch(`/api/restaurants/${restaurantCode}`);
+        console.log('[CLIENT] Starting restaurant verification for code:', restaurantCode);
+        const apiUrl = `/api/restaurants/${restaurantCode}`;
+        console.log('[CLIENT] API URL:', apiUrl);
+        
+        // Add timeout to fetch
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          console.log('[CLIENT] Request timeout - aborting');
+          controller.abort();
+        }, 10000); // 10 second timeout
+        
+        console.log('[CLIENT] Sending fetch request...');
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        clearTimeout(timeoutId);
+        
+        console.log('[CLIENT] Response received, status:', response.status);
         const data = await response.json();
+        console.log('[CLIENT] Response data:', data);
 
         if (!response.ok) {
           throw new Error(data.error || 'Restaurant not found');
         }
 
-        console.log('Restaurant found:', data);
+        console.log('[CLIENT] Restaurant found:', data);
         setRestaurantData(data.restaurant);
         
         // Store restaurant info in sessionStorage
@@ -46,8 +67,12 @@ export default function CustomerLogin() {
         setIsLoading(false);
         setStep(2);
       } catch (err: any) {
-        console.error('Error verifying code:', err);
-        setError(err.message || 'Invalid restaurant code');
+        console.error('[CLIENT] Error verifying code:', err);
+        if (err.name === 'AbortError') {
+          setError('Request timeout - please check your connection and try again');
+        } else {
+          setError(err.message || 'Invalid restaurant code');
+        }
         setIsLoading(false);
       }
     }
