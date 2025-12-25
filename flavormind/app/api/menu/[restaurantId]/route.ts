@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 10;
 
 /**
  * GET /api/menu/[restaurantId]
@@ -14,6 +13,14 @@ export async function GET(
   { params }: { params: Promise<{ restaurantId: string }> }
 ) {
   try {
+    if (!process.env.POSTGRES_URL) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
+      );
+    }
+    
+    const sql = neon(process.env.POSTGRES_URL);
     const { restaurantId } = await params;
     
     // Query menu items from database
@@ -25,8 +32,8 @@ export async function GET(
     `;
     
     return NextResponse.json({ 
-      menuItems: result.rows,
-      count: result.rows.length
+      menuItems: result,
+      count: result.length
     });
   } catch (error) {
     console.error('Error fetching menu items:', error);

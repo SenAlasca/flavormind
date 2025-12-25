@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30;
 
 /**
  * GET /api/db/init
@@ -12,6 +11,15 @@ export const maxDuration = 30;
  */
 export async function GET() {
   try {
+    if (!process.env.POSTGRES_URL) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
+      );
+    }
+    
+    const sql = neon(process.env.POSTGRES_URL);
+    
     // Create restaurants table
     await sql`
       CREATE TABLE IF NOT EXISTS restaurants (

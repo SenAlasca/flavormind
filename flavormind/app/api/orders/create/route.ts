@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 10;
 
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.POSTGRES_URL) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
+      );
+    }
+    
+    const sql = neon(process.env.POSTGRES_URL);
     const body = await request.json();
     const {
       restaurantId,
@@ -53,7 +60,7 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `;
 
-    const order = orderResult.rows[0];
+    const order = orderResult[0];
 
     // Insert order items
     for (const item of items) {

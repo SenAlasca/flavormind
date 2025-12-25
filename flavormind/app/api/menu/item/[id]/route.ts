@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 10;
 
 /**
  * PUT /api/menu/item/[id]
@@ -14,6 +13,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!process.env.POSTGRES_URL) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
+      );
+    }
+    
+    const sql = neon(process.env.POSTGRES_URL);
     const { id } = await params;
     const body = await request.json();
     const { name, description, price, category, imageUrl, available } = body;
@@ -65,9 +72,9 @@ export async function PUT(
       RETURNING id, restaurant_id, name, description, price, category, image_url, available, updated_at
     `;
     
-    const result = await sql.query(query, values);
+    const result = await sql(query, values);
     
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return NextResponse.json(
         { error: 'Menu item not found' },
         { status: 404 }
@@ -76,7 +83,7 @@ export async function PUT(
     
     return NextResponse.json({ 
       success: true,
-      menuItem: result.rows[0],
+      menuItem: result[0],
       message: 'Menu item updated successfully'
     });
   } catch (error) {
@@ -97,6 +104,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!process.env.POSTGRES_URL) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
+      );
+    }
+    
+    const sql = neon(process.env.POSTGRES_URL);
     const { id } = await params;
     
     const result = await sql`
@@ -105,7 +120,7 @@ export async function DELETE(
       RETURNING id
     `;
     
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return NextResponse.json(
         { error: 'Menu item not found' },
         { status: 404 }

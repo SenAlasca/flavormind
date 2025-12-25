@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 10;
 
 /**
  * POST /api/restaurants/create
@@ -22,12 +21,18 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    if (!process.env.POSTGRES_URL) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+    
+    const sql = neon(process.env.POSTGRES_URL);
+    
     // Check if restaurant code already exists
     const existing = await sql`
-      SELECT id FROM restaurants WHERE code = ${code}
+      SELECT id FROM restaurants WHERE UPPER(code) = UPPER(${code})
     `;
     
-    if (existing.rows.length > 0) {
+    if (existing.length > 0) {
       return NextResponse.json(
         { error: 'Restaurant code already exists' },
         { status: 409 }
@@ -41,7 +46,7 @@ export async function POST(request: NextRequest) {
       RETURNING id, name, code, created_at
     `;
     
-    const restaurant = result.rows[0];
+    const restaurant = result[0];
     
     return NextResponse.json({ 
       success: true,
