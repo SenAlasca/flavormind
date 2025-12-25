@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 10;
 
 /**
  * GET /api/restaurants/[code]
@@ -20,27 +19,22 @@ export async function GET(
     const { code } = await params;
     console.log('[API] Restaurant code:', code);
     
-    // Query restaurant from database with timeout
+    if (!process.env.POSTGRES_URL) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+    
+    const sql = neon(process.env.POSTGRES_URL);
+    
     console.log('[API] Querying database...');
+    const result = await sql`
+      SELECT id, code, name, created_at, updated_at
+      FROM restaurants
+      WHERE UPPER(code) = UPPER(${code})
+    `;
     
-    // Create a timeout promise
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Database query timeout')), 8000);
-    });
+    console.log('[API] Query result rows:', result.length);
     
-    // Race between query and timeout
-    const result = await Promise.race([
-      sql`
-        SELECT id, code, name, created_at, updated_at
-        FROM restaurants
-        WHERE UPPER(code) = UPPER(${code})
-      `,
-      timeoutPromise
-    ]) as any;
-    
-    console.log('[API] Query result rows:', result.rows.length);
-    
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       console.log('[API] Restaurant not found');
       return NextResponse.json(
         { error: 'Restaurant not found' },
@@ -48,7 +42,7 @@ export async function GET(
       );
     }
     
-    const restaurant = result.rows[0];
+    const restaurant = result[0];
     console.log('[API] Restaurant found:', restaurant.name);
     return NextResponse.json({ restaurant });
   } catch (error) {

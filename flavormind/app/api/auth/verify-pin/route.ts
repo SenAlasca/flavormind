@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 10;
 
 /**
  * POST /api/auth/verify-pin
@@ -25,6 +24,12 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    if (!process.env.POSTGRES_URL) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+    
+    const sql = neon(process.env.POSTGRES_URL);
+    
     // Query restaurant from database
     console.log('[API] Querying database...');
     const result = await sql`
@@ -32,9 +37,9 @@ export async function POST(request: NextRequest) {
       FROM restaurants
       WHERE UPPER(code) = UPPER(${code})
     `;
-    console.log('[API] Query result rows:', result.rows.length);
+    console.log('[API] Query result rows:', result.length);
     
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       console.log('[API] Restaurant not found');
       return NextResponse.json(
         { error: 'Invalid restaurant code' },
@@ -42,7 +47,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const restaurant = result.rows[0];
+    const restaurant = result[0];
     console.log('[API] Restaurant found:', restaurant.name);
     
     // Check which PIN was provided
