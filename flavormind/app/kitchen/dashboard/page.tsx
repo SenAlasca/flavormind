@@ -87,8 +87,16 @@ export default function KitchenDashboard() {
       const response = await fetch(`/api/menu/${resId}`);
       const data = await response.json();
       
-      if (response.ok) {
-        setMenuItems(data.menuItems);
+      if (response.ok && data.menuItems) {
+        // Ensure numeric fields are properly typed
+        const items = data.menuItems.map((item: any) => ({
+          ...item,
+          id: Number(item.id),
+          restaurant_id: Number(item.restaurant_id),
+          price: Number(item.price),
+          available: Boolean(item.available),
+        }));
+        setMenuItems(items);
       }
     } catch (error) {
       console.error('Error loading menu items:', error);
@@ -150,13 +158,25 @@ export default function KitchenDashboard() {
       
       const data = await response.json();
       
-      if (response.ok) {
-        setMenuItems([...menuItems, data.menuItem]);
+      if (response.ok && data.menuItem) {
+        // Ensure numeric fields are properly typed
+        const newItem = {
+          ...data.menuItem,
+          id: Number(data.menuItem.id),
+          restaurant_id: Number(data.menuItem.restaurant_id),
+          price: Number(data.menuItem.price),
+          available: Boolean(data.menuItem.available),
+        };
+        setMenuItems([...menuItems, newItem]);
         setShowAddModal(false);
         resetForm();
+      } else {
+        console.error('Failed to add menu item:', data);
+        alert('Failed to add menu item: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error adding menu item:', error);
+      alert('Error adding menu item. Please try again.');
     }
   };
 
@@ -177,15 +197,27 @@ export default function KitchenDashboard() {
       
       const data = await response.json();
       
-      if (response.ok) {
+      if (response.ok && data.menuItem) {
+        // Ensure numeric fields are properly typed
+        const updatedItem = {
+          ...data.menuItem,
+          id: Number(data.menuItem.id),
+          restaurant_id: Number(data.menuItem.restaurant_id),
+          price: Number(data.menuItem.price),
+          available: Boolean(data.menuItem.available),
+        };
         setMenuItems(menuItems.map(item => 
-          item.id === editingItem.id ? data.menuItem : item
+          item.id === editingItem.id ? updatedItem : item
         ));
         setEditingItem(null);
         resetForm();
+      } else {
+        console.error('Failed to update menu item:', data);
+        alert('Failed to update menu item: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error updating menu item:', error);
+      alert('Error updating menu item. Please try again.');
     }
   };
 
