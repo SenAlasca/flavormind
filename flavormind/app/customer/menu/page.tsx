@@ -48,10 +48,10 @@ export default function CustomerMenu() {
       const data = JSON.parse(session);
       setRestaurantId(data.restaurantId);
       setRestaurantName(data.restaurantName);
-      setCustomerName(data.customerName);
+      setCustomerName(data.name); // Field is 'name' not 'customerName'
       setOrderType(data.orderType);
       setTableNumber(data.tableNumber);
-      setGuestsCount(data.guestsCount);
+      setGuestsCount(data.guests); // Field is 'guests' not 'guestsCount'
       setAllergies(data.allergies);
       
       if (data.restaurantId) {
