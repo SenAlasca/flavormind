@@ -7,11 +7,14 @@ import { sql } from '@vercel/postgres';
  */
 export async function POST(request: NextRequest) {
   try {
+    console.log('[API] POST /api/auth/verify-pin - Starting request');
     const body = await request.json();
     const { code, pin } = body;
+    console.log('[API] Code:', code, 'PIN length:', pin?.length);
     
     // Validate required fields
     if (!code || !pin) {
+      console.log('[API] Missing required fields');
       return NextResponse.json(
         { error: 'Missing required fields: code, pin' },
         { status: 400 }
@@ -19,13 +22,16 @@ export async function POST(request: NextRequest) {
     }
     
     // Query restaurant from database
+    console.log('[API] Querying database...');
     const result = await sql`
       SELECT id, name, code, owner_pin, manager_pin, staff_pin
       FROM restaurants
-      WHERE code = ${code}
+      WHERE UPPER(code) = UPPER(${code})
     `;
+    console.log('[API] Query result rows:', result.rows.length);
     
     if (result.rows.length === 0) {
+      console.log('[API] Restaurant not found');
       return NextResponse.json(
         { error: 'Invalid restaurant code' },
         { status: 404 }
@@ -33,6 +39,7 @@ export async function POST(request: NextRequest) {
     }
     
     const restaurant = result.rows[0];
+    console.log('[API] Restaurant found:', restaurant.name);
     
     // Check which PIN was provided
     let role = null;
@@ -44,6 +51,8 @@ export async function POST(request: NextRequest) {
       role = 'staff';
     }
     
+    console.log('[API] Role determined:', role || 'INVALID PIN');
+    
     if (!role) {
       return NextResponse.json(
         { error: 'Invalid PIN' },
@@ -52,6 +61,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Return success with role information
+    console.log('[API] Auth successful');
     return NextResponse.json({ 
       success: true,
       role,
