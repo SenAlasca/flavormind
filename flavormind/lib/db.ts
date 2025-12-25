@@ -1,9 +1,13 @@
 import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless';
 
 /**
  * PostgreSQL Database Utility
  * This uses Vercel Postgres (Neon) for data storage
  */
+
+// Use neon client directly with connection string
+export const queryNeon = neon(process.env.POSTGRES_URL || '');
 
 // Execute a SQL query
 export async function query(sqlQuery: string, params?: any[]) {

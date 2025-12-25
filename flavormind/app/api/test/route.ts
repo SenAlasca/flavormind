@@ -1,40 +1,42 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 10;
 
 export async function GET() {
   console.log('[TEST API] Test route hit!');
   
   try {
-    console.log('[TEST API] Attempting database connection...');
+    console.log('[TEST API] Attempting database connection with Neon client...');
     
-    // Simple query with timeout
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Database connection timeout')), 5000);
-    });
+    if (!process.env.POSTGRES_URL) {
+      return NextResponse.json({ 
+        message: 'POSTGRES_URL not configured',
+        timestamp: new Date().toISOString(),
+      }, { status: 500 });
+    }
     
-    const result = await Promise.race([
-      sql`SELECT NOW() as current_time, COUNT(*) as restaurant_count FROM restaurants`,
-      timeoutPromise
-    ]) as any;
+    const sql = neon(process.env.POSTGRES_URL);
     
-    console.log('[TEST API] Database query successful!');
+    console.log('[TEST API] Executing query...');
+    const result = await sql`SELECT 1 as test, NOW() as current_time`;
+    
+    console.log('[TEST API] Query successful:', result);
     
     return NextResponse.json({ 
-      message: 'API routes and database are working!',
+      message: 'Database connection successful!',
       timestamp: new Date().toISOString(),
-      databaseTime: result.rows[0].current_time,
-      restaurantCount: result.rows[0].restaurant_count,
+      testValue: result[0].test,
+      dbTime: result[0].current_time,
     });
   } catch (error) {
     console.error('[TEST API] Error:', error);
     return NextResponse.json({ 
-      message: 'API route works but database connection failed',
+      message: 'Database connection failed',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
     }, { status: 500 });
   }
 }
