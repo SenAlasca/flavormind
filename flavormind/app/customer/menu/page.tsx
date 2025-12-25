@@ -174,7 +174,6 @@ export default function CustomerMenu() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData),
-        }),
       });
       
       const data = await response.json();
