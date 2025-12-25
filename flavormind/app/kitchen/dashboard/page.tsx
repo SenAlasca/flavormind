@@ -78,7 +78,7 @@ export default function KitchenDashboard() {
         
         // Auto-refresh orders every 10 seconds
         const intervalId = setInterval(() => {
-          loadOrders(id);
+          loadOrders(id, true); // Pass true to indicate it's a refresh
         }, 10000);
         
         return () => clearInterval(intervalId);
@@ -112,15 +112,17 @@ export default function KitchenDashboard() {
     }
   };
 
-  const loadOrders = async (resId: string) => {
-    setIsLoadingOrders(true);
+  const loadOrders = async (resId: string, isRefresh = false) => {
+    if (!isRefresh) {
+      setIsLoadingOrders(true);
+    }
     try {
       const response = await fetch(`/api/orders/${resId}`);
       const data = await response.json();
       
       if (response.ok && data.orders) {
         // Ensure numeric fields are properly typed
-        const orders = data.orders.map((order: any) => ({
+        const fetchedOrders = data.orders.map((order: any) => ({
           ...order,
           id: Number(order.id),
           restaurant_id: Number(order.restaurant_id),
@@ -135,12 +137,28 @@ export default function KitchenDashboard() {
             price: Number(item.price),
           })),
         }));
-        setOrders(orders);
+        
+        if (isRefresh) {
+          // Merge with existing orders - update existing and add new ones
+          setOrders(prevOrders => {
+            const orderMap = new Map(prevOrders.map(o => [o.id, o]));
+            fetchedOrders.forEach((newOrder: any) => {
+              orderMap.set(newOrder.id, newOrder);
+            });
+            return Array.from(orderMap.values()).sort((a, b) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
+          });
+        } else {
+          setOrders(fetchedOrders);
+        }
       }
     } catch (error) {
       console.error('Error loading orders:', error);
     } finally {
-      setIsLoadingOrders(false);
+      if (!isRefresh) {
+        setIsLoadingOrders(false);
+      }
     }
   };
 
