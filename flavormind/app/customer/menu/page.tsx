@@ -84,12 +84,21 @@ export default function CustomerMenu() {
       const response = await fetch(`/api/menu/${resId}`);
       const data = await response.json();
       
-      if (response.ok) {
-        setMenuItems(data.menuItems);
-        setFilteredItems(data.menuItems);
+      if (response.ok && data.menuItems) {
+        // Ensure numeric fields are properly typed
+        const items = data.menuItems.map((item: any) => ({
+          ...item,
+          id: Number(item.id),
+          restaurant_id: Number(item.restaurant_id),
+          price: Number(item.price),
+          available: Boolean(item.available),
+        }));
+        
+        setMenuItems(items);
+        setFilteredItems(items);
         
         // Extract unique categories
-        const categorySet = new Set<string>(data.menuItems.map((item: MenuItem) => item.category));
+        const categorySet = new Set<string>(items.map((item: MenuItem) => item.category));
         const uniqueCategories: string[] = ["All", ...Array.from(categorySet)];
         setCategories(uniqueCategories);
       }
