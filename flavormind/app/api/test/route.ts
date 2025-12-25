@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 10;
+
 export async function GET() {
   console.log('[TEST API] Test route hit!');
   
