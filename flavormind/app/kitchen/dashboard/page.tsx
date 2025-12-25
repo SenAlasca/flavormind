@@ -75,6 +75,13 @@ export default function KitchenDashboard() {
     if (id) {
       if (activeTab === 'orders') {
         loadOrders(id);
+        
+        // Auto-refresh orders every 10 seconds
+        const intervalId = setInterval(() => {
+          loadOrders(id);
+        }, 10000);
+        
+        return () => clearInterval(intervalId);
       } else {
         loadMenuItems(id);
       }
@@ -111,8 +118,24 @@ export default function KitchenDashboard() {
       const response = await fetch(`/api/orders/${resId}`);
       const data = await response.json();
       
-      if (response.ok) {
-        setOrders(data.orders);
+      if (response.ok && data.orders) {
+        // Ensure numeric fields are properly typed
+        const orders = data.orders.map((order: any) => ({
+          ...order,
+          id: Number(order.id),
+          restaurant_id: Number(order.restaurant_id),
+          table_number: order.table_number ? Number(order.table_number) : null,
+          guests_count: order.guests_count ? Number(order.guests_count) : null,
+          total_amount: Number(order.total_amount),
+          items: order.items.map((item: any) => ({
+            ...item,
+            id: Number(item.id),
+            menuItemId: Number(item.menuItemId),
+            quantity: Number(item.quantity),
+            price: Number(item.price),
+          })),
+        }));
+        setOrders(orders);
       }
     } catch (error) {
       console.error('Error loading orders:', error);
