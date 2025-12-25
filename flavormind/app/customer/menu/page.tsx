@@ -157,17 +157,23 @@ export default function CustomerMenu() {
         notes: null,
       }));
       
+      // Log the data being sent for debugging
+      const orderData = {
+        restaurantId: parseInt(restaurantId),
+        customerName,
+        orderType,
+        tableNumber: tableNumber || null,
+        guestsCount: guestsCount || null,
+        allergies: allergies || null,
+        items: orderItems,
+      };
+      
+      console.log('[CHECKOUT] Sending order data:', orderData);
+      
       const response = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          restaurantId: parseInt(restaurantId),
-          customerName,
-          orderType,
-          tableNumber,
-          guestsCount,
-          allergies,
-          items: orderItems,
+        body: JSON.stringify(orderData),
         }),
       });
       

@@ -15,6 +15,9 @@ export async function POST(request: NextRequest) {
     
     const sql = neon(process.env.POSTGRES_URL);
     const body = await request.json();
+    
+    console.log('[ORDERS API] Received order data:', JSON.stringify(body));
+    
     const {
       restaurantId,
       customerName,
@@ -26,11 +29,21 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!restaurantId || !customerName || !orderType || !items || items.length === 0) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    if (!restaurantId) {
+      console.log('[ORDERS API] Missing restaurantId');
+      return NextResponse.json({ error: 'Missing restaurantId' }, { status: 400 });
+    }
+    if (!customerName) {
+      console.log('[ORDERS API] Missing customerName');
+      return NextResponse.json({ error: 'Missing customerName' }, { status: 400 });
+    }
+    if (!orderType) {
+      console.log('[ORDERS API] Missing orderType');
+      return NextResponse.json({ error: 'Missing orderType' }, { status: 400 });
+    }
+    if (!items || items.length === 0) {
+      console.log('[ORDERS API] Missing items or empty cart');
+      return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
     }
 
     // Calculate total amount
