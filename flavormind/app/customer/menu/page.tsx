@@ -89,7 +89,7 @@ export default function CustomerMenu() {
         setFilteredItems(data.menuItems);
         
         // Extract unique categories
-        const uniqueCategories = ["All", ...new Set(data.menuItems.map((item: MenuItem) => item.category))];
+        const uniqueCategories: string[] = ["All", ...Array.from(new Set(data.menuItems.map((item: MenuItem) => item.category)))];
         setCategories(uniqueCategories);
       }
     } catch (error) {
